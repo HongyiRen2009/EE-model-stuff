@@ -16,8 +16,6 @@ from ptflops import get_model_complexity_info
 import copy
 import seaborn as sns
 import pandas as pd
-import validation_test, memory_test, dependency_test, cifar10_test
-import sys
 
 # Device config
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
