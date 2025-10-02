@@ -596,6 +596,19 @@ def plot_confusion_matrix(y_true, y_pred, class_names, save_path):
     plt.close()
 
 
+def to_python_types(obj):
+    if isinstance(obj, dict):
+        return {k: to_python_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [to_python_types(v) for v in obj]
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    else:
+        return obj
+
+
 def train_model(
     model,
     train_loader,
@@ -666,7 +679,7 @@ def train_model(
 
         current_lr = optimizer.param_groups[0]["lr"]
         if scheduler:
-            scheduler.step(val_loss)
+            scheduler.step()
 
         gpu_mem = (
             torch.cuda.max_memory_allocated(device) / (1024**2)
@@ -750,7 +763,7 @@ def train_model(
     }
 
     with open(os.path.join(save_dir, "results.json"), "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(to_python_types(results), f, indent=2)
 
     # Save classification report
     class_names = [
@@ -1050,10 +1063,11 @@ def run_multiple_seeds_experiment(
     seeds = [42, 123, 456, 789, 1011, 1314, 1617]  # 7 different seeds
     all_results = []
     all_histories = []
-
     print(f"\n🔄 Running {model_name} with {num_seeds} different seeds...")
 
     for seed_idx, seed in enumerate(seeds):
+        if seed_idx >= num_seeds:
+            break
         print(f"\n--- Seed {seed_idx+1}/{num_seeds}: {seed} ---")
 
         # Set reproducibility for this seed
@@ -1110,7 +1124,7 @@ def run_multiple_seeds_experiment(
     os.makedirs(averaged_save_dir, exist_ok=True)
 
     with open(os.path.join(averaged_save_dir, "averaged_results.json"), "w") as f:
-        json.dump(averaged_results, f, indent=2)
+        json.dump(to_python_types(averaged_results), f, indent=2)
 
     # Also save individual seed results summary
     seeds_summary = {
@@ -1130,7 +1144,7 @@ def run_multiple_seeds_experiment(
     }
 
     with open(os.path.join(averaged_save_dir, "seeds_summary.json"), "w") as f:
-        json.dump(seeds_summary, f, indent=2)
+        json.dump(to_python_types(seeds_summary), f, indent=2)
 
     # Plot averaged training curves
     plot_averaged_training_curves(averaged_results["history"], averaged_save_dir)
